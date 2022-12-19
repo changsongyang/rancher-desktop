@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Remove Rancher Desktop distros from WSL
         continue-on-error: true
-        run: PsExec64.exe -i -u chivo -p "$SECRET" -accepteula unregister-wsl.ps1
+        run: PsExec64.exe -i -u chivo -p ${{ secrets.WIN11PRV_USERPASS }} -accepteula -Command 'Start-Process unregister-wsl.ps1'
 
       - name: Cleanup Test Environment
         continue-on-error: true
