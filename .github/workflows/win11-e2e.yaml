@@ -17,9 +17,9 @@ jobs:
     steps:
       - name: Unregister Rancher Desktop distros from WSL
         continue-on-error: true
-          run: |
-            wsl --unregister rancher-desktop
-            wsl --unregister rancher-desktop-data
+        run: |
+          wsl --unregister rancher-desktop
+          wsl --unregister rancher-desktop-data
       - name: Cleanup Test Environment
         continue-on-error: true
         run: |
