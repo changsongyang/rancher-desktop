@@ -18,10 +18,11 @@ jobs:
       - name: Remove Rancher Desktop distros from WSL
         continue-on-error: true
         run: |
-          Psexec64.exe \\chivo -u chivo -p ${{ secrets.WIN11PRV_USERPASS }} -d -i -accepteula powershell.exe -File C:\Scripts\unregister-wsl.ps1 -Verb RunAs
+          Psexec64.exe \\chivo -u chivo -p ${{ secrets.WIN11PRV_USERPASS }} -d -i -accepteula powershell.exe -File C:\Users\tuctuc\Scripts\unregister-wsl.ps1 -Verb RunAs
       - name: Cleanup Test Environment
         continue-on-error: true
-        run: PsExec64.exe -i -u chivo -p "$SECRET" -accepteula clean-test-env.ps1
+        run: |
+          Psexec64.exe \\chivo -u chivo -p ${{ secrets.WIN11PRV_USERPASS }} -d -i -accepteula powershell.exe -File C:\Users\tuctuc\Scripts\clean-test-env.ps1 -Verb RunAs
       - name: Install Scoop
         continue-on-error: true
         run: PsExec64.exe -i -u chivo -p "$SECRET" -accepteula install-scoop.ps1
