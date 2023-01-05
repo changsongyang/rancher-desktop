@@ -16,4 +16,5 @@ jobs:
       - name: change user and check output
         continue-on-error: false
         run: |
-          sc.exe --help
+          sc --help
+          Set-Content --help
