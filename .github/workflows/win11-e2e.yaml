@@ -4,14 +4,15 @@ on:
   push:
     branches:
       bash-win11-ci
-
+defaults:
+  run:
+    shell: bash
 jobs:
 
   e2e-tests:
     timeout-minutes: 90
     runs-on: [self-hosted, x64, win11]
     env:
-      shell: bash
       SECRET: ${{ secrets.WIN11PRV_USERPASS }}
       HOME: C:/Users/tuctuc
     steps:
