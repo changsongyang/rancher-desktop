@@ -6,7 +6,7 @@ on:
       bash-win11-ci
 defaults:
   run:
-    shell: pwsh
+    shell: cmd
 jobs:
 
   e2e-tests:
@@ -17,4 +17,3 @@ jobs:
         continue-on-error: false
         run: |
           sc --help
-          Set-Content --help
