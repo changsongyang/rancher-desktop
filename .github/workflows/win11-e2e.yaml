@@ -6,8 +6,7 @@ on:
       bash-win11-ci
 defaults:
   run:
-    shell: bash
-    working-directory: c/Users/tuctuc
+    shell: 'C:\Users\tuctuc\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Scoop Apps'
 jobs:
 
   e2e-tests:
@@ -42,7 +41,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install Windows dependencies
-        shell: powershell
+        shell: pwsh
         run: .\scripts\windows-setup.ps1 -SkipVisualStudio -SkipTools
       - name: Install dependencies
         run: npm ci
