@@ -1,0 +1,22 @@
+name: check user
+
+on:
+  push:
+    branches:
+      bash-win11-ci
+defaults:
+  run:
+    shell: pwsh
+jobs:
+
+  e2e-tests:
+    timeout-minutes: 90
+    runs-on: [self-hosted, x64, win11]
+    steps:
+      - name: change user and check output
+        continue-on-error: false
+        run: |
+          sc.exe config "actions.runner.rancher-sandbox-rancher-desktop.ProvoWin11-1" obj="CHIVO\chivo" type= own
+          echo $env:USERDOMAIN
+          echo $env:USERNAME
+          echo $env:HOMEPATH
