@@ -19,6 +19,7 @@ jobs:
       - name: Unregister Rancher Desktop distros from WSL
         continue-on-error: true
         run: |
+          ls
           whoami
           wsl --unregister rancher-desktop
           wsl --unregister rancher-desktop-data
