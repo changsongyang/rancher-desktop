@@ -1,4 +1,4 @@
-name: e2e tests on Mac M1
+name: e2e tests on Win 11 - bash
 
 on:
   push:
