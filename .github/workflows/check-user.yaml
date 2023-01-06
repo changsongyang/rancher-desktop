@@ -21,3 +21,9 @@ jobs:
           echo %USERDOMAIN%
           echo %USERNAME%
           echo %HOMEPATH%
+      - name: Unregister wsl
+        continue-on-error: true
+        run: |
+          wsl --unregister rancher-desktop
+          wsl --unregister rancher-desktop-data
+
