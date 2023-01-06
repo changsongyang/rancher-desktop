@@ -12,6 +12,8 @@ jobs:
   e2e-tests:
     timeout-minutes: 90
     runs-on: [self-hosted, x64, win11]
+    env:
+      HOMEPATH: C:\Users\tuctuc
     steps:
       - name: change user and check output
         continue-on-error: false
