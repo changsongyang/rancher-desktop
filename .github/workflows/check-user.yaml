@@ -14,6 +14,8 @@ jobs:
     runs-on: [self-hosted, x64, win11]
     env:
       HOMEPATH: C:\Users\tuctuc
+      USERNAME: chivo
+      USERDOMAIN: CHIVO
     steps:
       - name: change user and check output
         continue-on-error: false
