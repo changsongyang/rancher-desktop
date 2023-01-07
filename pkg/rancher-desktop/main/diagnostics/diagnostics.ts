@@ -52,6 +52,7 @@ export class DiagnosticsManager {
         import('./dockerCliSymlinks'),
         import('./rdBinInShell'),
         import('./kubeContext'),
+        import('./validLimaSocketPath'),
         import('./wslFromStore'),
         import('./mockForScreenshots'),
       ])).map(obj => obj.default);
