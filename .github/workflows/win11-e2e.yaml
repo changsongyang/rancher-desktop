@@ -1,12 +1,12 @@
-name: e2e tests on Win 11 - bash
+name: e2e tests on Windows
 
 on:
   push:
     branches:
-      bash-win11-ci
+        win11-ci
 defaults:
   run:
-    shell: bash
+    shell: pwsh
 jobs:
 
   e2e-tests:
@@ -16,67 +16,31 @@ jobs:
       SECRET: ${{ secrets.WIN11PRV_USERPASS }}
       HOME: C:/Users/tuctuc
     steps:
-      - name: Unregister Rancher Desktop distros from WSL
+      - name: Remove Rancher Desktop distros from WSL
         continue-on-error: true
         run: |
-          whoami
-          wsl --unregister rancher-desktop
-          wsl --unregister rancher-desktop-data
+          Start-Process -FilePath "unregister-wsl.ps1" -WorkingDirectory "C:\Scripts"
       - name: Cleanup Test Environment
         continue-on-error: true
+        run: PsExec64.exe -i -u chivo -p "$SECRET" -accepteula clean-test-env.ps1
+      - name: Install Scoop
+        continue-on-error: true
+        run: PsExec64.exe -i -u chivo -p "$SECRET" -accepteula install-scoop.ps1
+      - name: Install Project Dependencies
+        continue-on-error: true
         run: |
-          rm -rf $HOME/AppData/Local/rancher-desktop
-          rm -rf $HOME/AppData/Local/rancher-desktop
-          rm -rf $HOME/AppData/Roaming/rancher-desktop
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
-          ref: main
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '16.x'
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '^1.18'
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-      - name: Install Windows dependencies
-        shell: pwsh
-        run: .\scripts\windows-setup.ps1 -SkipVisualStudio -SkipTools
-      - name: Install dependencies
-        run: npm ci
-      - name: Suppress sudo before start up
+          PsExec64.exe -i -u chivo -p "$SECRET" -accepteula install-project-dependencies.ps1
+      - name: Install node
+        run: PsExec64.exe -i -u chivo -p "$SECRET" -accepteula install-node.ps1
+      - name: Setup node
+        run: PsExec64.exe -i -u chivo -p "$SECRET" -accepteula setup-node.ps1
+      - name: Install node dependencies
         run: |
-          touch $HOME/AppData/Roaming/rancher-desktop/settings.json
-          cat <<EOF > $HOME/AppData/Roaming/rancher-desktop/settings.json
-          {
-            "version": 4,
-            "kubernetes": {
-              "memoryInGB": 6,
-              "numberCPUs":2,
-              "suppressSudo": true
-            },
-            "updater": false,
-            "debug": true,
-            "pathManagementStrategy": "notset"
-          }
-          EOF
-      - name: Run Rancher Desktop in dev
+          PsExec64.exe -i -u chivo -p "$SECRET" -accepteula install-node-mod.ps1
+      - name: Checkout repository
         run: |
-          npm run dev -- --no-modal-dialogs &
-          sleep 200
-          '$HOME/AppData/Local/Programs/Rancher Desktop/resources/resources/win32/bin/rdctl' shutdown
-          wait
+          PsExec64.exe -i -u chivo -p "$SECRET" -accepteula checkout-repo.ps1
       - name: Run e2e Tests
         continue-on-error: false
-        run: npm run test:e2e
-      - name: Failed tests
-        if: failure()
-        run: mkdir -p ./e2e/reports
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: e2etest-artifacts
-          path: ./e2e/reports/*
+        run: |
+          PsExec64.exe -i -u chivo -p "$SECRET" -accepteula run-e2e-tests.ps1
