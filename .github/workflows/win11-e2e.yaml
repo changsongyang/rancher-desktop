@@ -6,7 +6,7 @@ on:
         win11-ci
 defaults:
   run:
-    shell: pwsh
+    shell: powershell
 jobs:
 
   e2e-tests:
