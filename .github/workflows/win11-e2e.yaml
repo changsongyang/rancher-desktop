@@ -19,7 +19,9 @@ jobs:
       - name: Remove Rancher Desktop distros from WSL
         continue-on-error: true
         run: |
-          Start-Process -FilePath "unregister-wsl.ps1" -WorkingDirectory "$env:HOME/Scripts"
+          whoami
+          wsl --unregister rancher-desktop
+          wsl --unregister rancher-desktop-data
       - name: Cleanup Test Environment
         continue-on-error: true
         run: Start-Process -FilePath "clean-test-env.ps1" -WorkingDirectory "$env:HOME/Scripts"
