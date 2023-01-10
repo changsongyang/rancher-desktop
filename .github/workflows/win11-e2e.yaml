@@ -13,12 +13,11 @@ jobs:
     timeout-minutes: 90
     runs-on: [self-hosted, x64, win11]
     env:
-      SECRET: ${{ secrets.WIN11PRV_USERPASS }}
       HOME: C:/Users/tuctuc
       TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v3
-      with:
+        with:
         persist-credentials: false
       - name: Remove Rancher Desktop distros from WSL
         continue-on-error: true
