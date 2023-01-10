@@ -15,7 +15,11 @@ jobs:
     env:
       SECRET: ${{ secrets.WIN11PRV_USERPASS }}
       HOME: C:/Users/tuctuc
+      TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - uses: actions/checkout@v3
+      with:
+        persist-credentials: false
       - name: Remove Rancher Desktop distros from WSL
         continue-on-error: true
         run: |
@@ -39,9 +43,6 @@ jobs:
       - name: Install node dependencies
         run: |
           Start-Process -FilePath "install-node-mod.ps1" -WorkingDirectory "C:\Scripts"
-      - name: Checkout repository
-        run: |
-
       - name: Run e2e Tests
         continue-on-error: false
         run: |
