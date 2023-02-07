@@ -7,6 +7,7 @@ is_true() {
         true
     fi
 }
+
 is_false() {
     ! is_true "$1"
 }
