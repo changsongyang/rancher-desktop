@@ -36,6 +36,33 @@ verify_nginx() {
     assert_output --partial "Welcome to nginx!"
 }
 
+@test 'deploy rancher' {
+    deploy_rancher
+}
+
+deploy_rancher() {
+    local rancher_image="rancher/rancher:$RD_RANCHER_IMAGE_TAG"
+    ctrctl pull "$rancher_image"
+    ctrctl run --privileged -d --restart=no -p 8080:80 -p 8443:443 --name rancher "$rancher_image"
+}
+verify_rancher() {
+    try --max 9 --delay 10 curl --insecure --silent --show-error "https://localhost:8443/dashboard/auth/login"
+    assert_success
+    assert_output --partial "Rancher Dashboard"
+    run ctrctl logs rancher
+    assert_success
+    assert_output --partial "Bootstrap Password:"
+}
+
+@test 'deploy busybox' {
+    kubectl_exe create deploy busybox --image=busybox --replicas=2 -- /bin/sh -c "sleep inf"
+}
+
+verify_busybox() {
+    run kubectl_exe get pods -A | grep Running | grep  busybox- | wc -l
+    assert_output 2
+}
+
 @test 'deploy wordpress' {
     helm install wordpress bitnami/wordpress \
           --wait \
@@ -68,6 +95,14 @@ verify_wordpress() {
     verify_wordpress
 }
 
+@test 'verify rancher before upgrade' {
+    verify_rancher
+}
+
+@test 'verify busybox before upgrade' {
+    verify_busybox
+}
+
 @test 'upgrade kubernetes' {
     rdctl set --kubernetes-version "$RD_KUBERNETES_VERSION"
     wait_for_apiserver "$RD_KUBERNETES_VERSION"
@@ -79,6 +114,22 @@ verify_wordpress() {
 
 @test 'verify wordpress after upgrade' {
     verify_wordpress
+}
+
+@test 'verify rancher after upgrade' {
+    verify_rancher_gone
+}
+
+@test 'verify busybox after upgrade' {
+    verify_busybox
+}
+
+@test 'deploy rancher before downgrade' {
+    deploy_rancher
+}
+
+@test 'verify rancher before downgrade' {
+    verify_rancher
 }
 
 @test 'downgrade kubernetes' {
@@ -97,6 +148,26 @@ verify_wordpress() {
     assert_success
     refute_line --regexp "$(printf '^wordpress[ \t]+default')"
     #verify_wordpress
+}
+
+@test 'verify rancher is gone after downgrade' {
+    verify_rancher_gone
+}
+
+verify_rancher_gone() {
+    run ctrctl ps
+    assert_success
+    refute_line --regexp "$(printf '^rancher/rancher[ \t]+')"
+    curl --insecure --silent --show-error "https://localhost:8443/dashboard/auth/login"
+    assert_failure
+}
+
+@test 'verify busybox is gone after downgrade' {
+    verify_busybox_gone
+}
+verify_busybox_gone() {
+    run kubectl_exe get pods -A | grep  busybox- | wc -l
+    assert_output 0
 }
 
 teardown_file() {
