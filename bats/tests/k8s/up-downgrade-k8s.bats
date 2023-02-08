@@ -22,7 +22,8 @@ setup() {
 
 @test 'deploy nginx - always restart' {
     ctrctl pull nginx
-    ctrctl run -d -p 8585:80 --restart=always --name nginx-restart nginx
+    run ctrctl run -d -p 8585:80 --restart=always --name nginx-restart nginx
+    assert_success
 }
 
 #@test 'deploy nginx - no restart' {
@@ -31,12 +32,12 @@ setup() {
 #}
 
 @test 'deploy busybox' {
-    kubectl_exe create deploy busybox --image=busybox --replicas=2 -- /bin/sh -c "sleep inf"
-    sleep 5
+    run kubectl_exe create deploy busybox --image=busybox --replicas=2 -- /bin/sh -c "sleep inf"
+    assert_success
 }
 
 @test 'verify nginx before upgrade' {
-    verify_nginx
+    try verify_nginx
 }
 
 verify_nginx() {
@@ -46,12 +47,12 @@ verify_nginx() {
 }
 
 @test 'verify busybox before upgrade' {
-    verify_busybox
+    try verify_busybox
 }
 
 verify_busybox() {
-    run kubectl_exe get pods -A | grep Running | grep  busybox- | wc -l
-    assert_output --partial "2"
+    run kubectl get pods --selector="app=busybox" -o jsonpath='{.items[*].status.phase}'
+    assert_output --partial "Running Running"
 }
 
 @test 'upgrade kubernetes' {
@@ -61,11 +62,11 @@ verify_busybox() {
 }
 
 @test 'verify nginx after upgrade' {
-    verify_nginx
+    try verify_nginx
 }
 
 @test 'verify busybox after upgrade' {
-    verify_busybox
+    try verify_busybox
 }
 
 @test 'downgrade kubernetes' {
@@ -76,19 +77,20 @@ verify_busybox() {
 
 @test 'verify nginx after downgrade' {
     # nginx should still be running because it is not managed by kubernetes
-    verify_nginx
+    try verify_nginx
 }
 
 @test 'verify busybox is gone after downgrade' {
     verify_busybox_gone
 }
 verify_busybox_gone() {
-    run kubectl_exe get pods -A | grep  busybox- | wc -l
-    assert_output --partial "0"
+    run kubectl_exe get pods -A --selector="app=busybox"
+    assert_output --partial "No resources found"
 }
 
 teardown_file() {
     load '../helpers/load'
 
     run ctrctl rm -f nginx
+    run kubectl_exe delete --selector="app=busybox"
 }
