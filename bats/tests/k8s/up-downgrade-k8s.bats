@@ -26,33 +26,51 @@ setup() {
     assert_success
 }
 
-#@test 'deploy nginx - no restart' {
- #   ctrctl pull nginx
-  #  ctrctl run -d -p 8686:80 --restart=no --name nginx-no-restart nginx
-#}
+@test 'deploy nginx - no restart' {
+    run ctrctl run -d -p 8686:80 --restart=no --name nginx-no-restart nginx
+    assert_success
+}
 
 @test 'deploy busybox' {
     run kubectl_exe create deploy busybox --image=busybox --replicas=2 -- /bin/sh -c "sleep inf"
     assert_success
 }
 
+verify_nginx() {
+    local nginx_ports=(8585 8686)
+    for port in "${nginx_ports[@]}"; do
+        run curl http://localhost:"$port"
+        assert_success
+        assert_output --partial "Welcome to nginx!"
+    done
+}
+
 @test 'verify nginx before upgrade' {
     try verify_nginx
 }
 
-verify_nginx() {
-    run curl http://localhost:8585
-    assert_success
-    assert_output --partial "Welcome to nginx!"
+verify_busybox() {
+    run kubectl get pods --selector="app=busybox" -o jsonpath='{.items[*].status.phase}'
+    assert_output --partial "Running Running"
 }
 
 @test 'verify busybox before upgrade' {
     try verify_busybox
 }
 
-verify_busybox() {
-    run kubectl get pods --selector="app=busybox" -o jsonpath='{.items[*].status.phase}'
-    assert_output --partial "Running Running"
+verify_images() {
+    if using_docker; then
+        run ctrctl images
+        assert_output --partial "nginx" "busybox"
+    else
+        run ctrctl images --format json
+        assert_output --partial "\"Repository\":\"nginx"
+        run ctrctl images --namespace k8s.io
+        assert_output --partial "busybox"
+    fi
+}
+@test 'verify images before upgrade' {
+    verify_images
 }
 
 @test 'upgrade kubernetes' {
@@ -61,12 +79,33 @@ verify_busybox() {
     wait_for_container_engine
 }
 
+verify_nginx_after_change_k8s() {
+            run curl http://localhost:"8686"
+            assert_failure
+            assert_output --partial "Failed to connect to localhost port 8686"
+            run curl http://localhost:"8585"
+            assert_success
+            assert_output --partial "Welcome to nginx!"
+}
+
 @test 'verify nginx after upgrade' {
-    try verify_nginx
+    try verify_nginx_after_change_k8s
 }
 
 @test 'verify busybox after upgrade' {
     try verify_busybox
+}
+
+@test 'verify images after upgrade' {
+    verify_images
+}
+
+restart_nginx() {
+    run ctrctl start nginx-no-restart
+    assert_success
+}
+@test 'restart nginx - no restart before downgrade' {
+    try restart_nginx
 }
 
 @test 'downgrade kubernetes' {
@@ -77,15 +116,20 @@ verify_busybox() {
 
 @test 'verify nginx after downgrade' {
     # nginx should still be running because it is not managed by kubernetes
-    try verify_nginx
+    try verify_nginx_after_change_k8s
+}
+
+verify_busybox_gone() {
+    run kubectl_exe get pods -A --selector="app=busybox"
+    assert_output --partial "No resources found"
 }
 
 @test 'verify busybox is gone after downgrade' {
     verify_busybox_gone
 }
-verify_busybox_gone() {
-    run kubectl_exe get pods -A --selector="app=busybox"
-    assert_output --partial "No resources found"
+
+@test 'verify images after downgrade' {
+    verify_images
 }
 
 teardown_file() {
