@@ -28,7 +28,7 @@ setup() {
           --set mariadb.volumePermissions.enabled=true
 }
 
-verify_wordpress() {
+@test 'verify wordpress was deployed' {
     run helm list
     assert_success
     assert_line --regexp "$(printf '^wordpress[ \t]+default')"
@@ -41,10 +41,6 @@ verify_wordpress() {
     try --max 9 --delay 10 curl --silent --show-error "http://localhost:$output"
     assert_success
     assert_output --regexp "(Just another WordPress site|<title>User&#039;s Blog!</title>)"
-}
-
-@test 'verify wordpress was deployed' {
-    verify_wordpress
 }
 
 teardown_file() {
