@@ -1,5 +1,8 @@
 setup() {
     load '../helpers/load'
+    if [ "$ARCH" = "arm64" ]; then
+        skip "Wordpress is not compatible with arm64 architecture. Skipping..."
+    fi
 }
 
 @test 'factory reset' {
