@@ -1,4 +1,3 @@
-import fs from 'fs';
 import os from 'os';
 import { join } from 'path';
 import timers from 'timers';
@@ -6,10 +5,12 @@ import timers from 'timers';
 import * as nativeReg from 'native-reg';
 import plist from 'plist';
 
+import { readConfigFile } from '@pkg/config/configFileWrapper';
 import * as settings from '@pkg/config/settings';
 import * as childProcess from '@pkg/utils/childProcess';
 import Logging from '@pkg/utils/logging';
 import paths from '@pkg/utils/paths';
+import { RecursivePartial } from '@pkg/utils/typeUtils';
 
 const console = Logging.background;
 
@@ -174,10 +175,10 @@ const lockableDefaultSettings = {
  *       located in the main process.
  */
 
-export function readDeploymentProfiles() {
-  let profiles = {
-    defaults: undefined,
-    locked:   undefined,
+export function readDeploymentProfiles(): settings.DeploymentProfileType {
+  let profiles : Record<'defaults'|'locked', RecursivePartial<settings.Settings>> = {
+    defaults: {} as RecursivePartial<settings.Settings>,
+    locked:   {} as RecursivePartial<settings.Settings>,
   };
 
   switch (os.platform()) {
@@ -242,12 +243,12 @@ function readProfileFiles(rootPath: string, defaultsPath: string, lockedPath: st
   let locked;
 
   try {
-    const defaultsData = fs.readFileSync(join(rootPath, defaultsPath), 'utf8');
+    const defaultsData = readConfigFile(join(rootPath, defaultsPath));
 
     defaults = parser.parse(defaultsData);
   } catch {}
   try {
-    const lockedData = fs.readFileSync(join(rootPath, lockedPath), 'utf8');
+    const lockedData = readConfigFile(join(rootPath, lockedPath));
 
     locked = parser.parse(lockedData);
   } catch (ex: any) {
@@ -324,5 +325,5 @@ function validateDeploymentProfile(profile: any, schema: any) {
     }
   }
 
-  return profile;
+  return profile as RecursivePartial<settings.Settings>;
 }

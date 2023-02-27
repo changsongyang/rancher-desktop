@@ -9,9 +9,11 @@ import _ from 'lodash';
 
 import { TransientSettings } from '@pkg/config/transientSettings';
 import { PathManagementStrategy } from '@pkg/integrations/pathManager';
+import { readDeploymentProfiles } from '@pkg/utils/backgroundProcess';
 import clone from '@pkg/utils/clone';
 import Logging from '@pkg/utils/logging';
 import paths from '@pkg/utils/paths';
+import { RecursivePartial } from '@pkg/utils/typeUtils';
 import { getProductionVersion } from '@pkg/utils/version';
 
 const console = Logging.settings;
@@ -130,6 +132,15 @@ export const defaultSettings = {
 
 export type Settings = typeof defaultSettings;
 
+// There's probably a typescript thing for this
+export type LockedSettingsType = Record<string, any>;
+export const lockedSettings: LockedSettingsType = {};
+
+export interface DeploymentProfileType {
+  defaults: RecursivePartial<Settings>;
+  locked: RecursivePartial<Settings>;
+}
+
 let _isFirstRun = false;
 let settings: Settings | undefined;
 
@@ -215,14 +226,35 @@ export async function clear() {
 export function getUpdatableNode(cfg: Settings, fqFieldAccessor: string): [Record<string, any>, string] | null {
   const optionParts = fqFieldAccessor.split('.');
   const finalOptionPart = optionParts.pop() ?? '';
-  let currentConfig: Record<string, any> = cfg;
+  const currentConfig = optionParts.length === 0 ? cfg : _.get(cfg, optionParts.join('.'));
 
+  return (finalOptionPart in (currentConfig || {})) ? [currentConfig, finalOptionPart] : null;
+}
+
+export function getObjectRepresentation(fqFieldAccessor: string, finalValue: boolean|number|string): RecursivePartial<Settings> {
+  if (!fqFieldAccessor) {
+    throw new Error("Invalid command-line option: can't be the empty string.");
+  }
+  const optionParts: string[] = fqFieldAccessor.split('.');
+
+  if (optionParts.length === 1) {
+    return { [fqFieldAccessor]: finalValue };
+  }
+  const lastField: string|undefined = optionParts.pop();
+
+  if (!lastField) {
+    throw new Error("Unrecognized command-line option ends with a dot ('.')");
+  }
+  let newConfig: RecursivePartial<Settings> = { [lastField]: finalValue };
+
+  optionParts.reverse();
   for (const field of optionParts) {
-    currentConfig = currentConfig[field] || {};
+    newConfig = { [field]: newConfig };
   }
 
-  return (finalOptionPart in currentConfig) ? [currentConfig, finalOptionPart] : null;
+  return newConfig;
 }
+
 export function updateFromCommandLine(cfg: Settings, commandLineArgs: string[]): Settings {
   const lim = commandLineArgs.length;
   let processingExternalArguments = true;
@@ -312,39 +344,82 @@ export function updateFromCommandLine(cfg: Settings, commandLineArgs: string[]):
 
   return cfg;
 }
+
 /**
  * Load the settings file or create it if not present.  If the settings have
  * already been loaded, return it without re-loading from disk.
  */
 export function load(): Settings {
+  let deploymentProfiles: DeploymentProfileType = { defaults: {}, locked: {} };
+  let setDefaultMemory = false;
+  let lockedProfileSettings: any;
+  // XXX: Do we need to ever obey a setting of updater.enabled in the deployment profile?
+
+  try {
+    deploymentProfiles = readDeploymentProfiles();
+    lockedProfileSettings = deploymentProfiles.locked;
+  } catch {
+    lockedProfileSettings = {};
+  }
   try {
     settings ??= loadFromDisk();
   } catch (err: any) {
     settings = clone(defaultSettings);
     if (err.code === 'ENOENT') {
-      _isFirstRun = true;
-      if (os.platform() === 'darwin' || os.platform() === 'linux') {
-        const totalMemoryInGB = os.totalmem() / 2 ** 30;
-
-        // 25% of available ram up to a maximum of 6gb
-        settings.virtualMachine.memoryInGB = Math.min(6, Math.round(totalMemoryInGB / 4.0));
+      if (Object.keys(deploymentProfiles.defaults).length) {
+        _.merge(settings, deploymentProfiles.defaults);
+        if (!_.get(deploymentProfiles.defaults, 'virtualMachine.memoryInGB')) {
+          setDefaultMemory = true;
+        }
+      } else {
+        _isFirstRun = true;
+        setDefaultMemory = true;
       }
     }
-    if (os.platform() === 'linux' && !process.env['APPIMAGE']) {
-      settings.application.updater.enabled = false;
+    if (setDefaultMemory && (os.platform() === 'darwin' || os.platform() === 'linux')) {
+      const totalMemoryInGB = os.totalmem() / 2 ** 30;
+
+      // 25% of available ram up to a maximum of 6gb
+      settings.virtualMachine.memoryInGB = Math.min(6, Math.round(totalMemoryInGB / 4.0));
     }
 
     const appVersion = getProductionVersion();
 
     // Auo-update doesn't work for CI or local builds, so don't enable it by default
-    if (appVersion.includes('-') || appVersion.includes('?')) {
+    if (!_.has(deploymentProfiles.defaults, 'application.updater.enabled') &&
+      (appVersion.includes('-') || appVersion.includes('?') ||
+        (os.platform() === 'linux' && !process.env['APPIMAGE']))) {
       settings.application.updater.enabled = false;
     }
 
     save(settings);
   }
+  _.merge(settings, deploymentProfiles.defaults, lockedProfileSettings);
+  if (settings.application.pathManagementStrategy === PathManagementStrategy.NotSet) {
+    settings.application.pathManagementStrategy = PathManagementStrategy.RcFiles;
+    save(settings);
+  }
+  determineLockedFields(lockedSettings, lockedProfileSettings);
 
   return settings;
+}
+
+// Precondition: both parameters are non-null objects
+export function determineLockedFields(lockedSettingsToUpdate: any, lockedProfileSettings: any) {
+  for (const key in lockedProfileSettings) {
+    determineLockedFieldsInner(lockedSettingsToUpdate, lockedProfileSettings[key], key);
+  }
+}
+
+function determineLockedFieldsInner(lockedSettingsToUpdate: any, lockedProfileSettings: any, oldKey: string) {
+  if (typeof lockedProfileSettings !== 'object' || Array.isArray(lockedProfileSettings) || lockedProfileSettings === null) {
+    lockedSettingsToUpdate[oldKey] = true;
+  } else {
+    lockedSettingsToUpdate[oldKey] = {};
+    for (const newKey in lockedProfileSettings) {
+      determineLockedFieldsInner(lockedSettingsToUpdate[oldKey], lockedProfileSettings[newKey], newKey);
+    }
+  }
 }
 
 export function firstRunDialogNeeded() {
