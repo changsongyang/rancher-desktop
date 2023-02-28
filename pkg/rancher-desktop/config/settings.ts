@@ -360,7 +360,7 @@ export function updateFromCommandLine(cfg: Settings, commandLineArgs: string[]):
 export function load(): Settings {
   let deploymentProfiles: DeploymentProfileType = { defaults: {}, locked: {} };
   let setDefaultMemory = false;
-  let lockedProfileSettings: any;
+  let lockedProfileSettings: RecursivePartial<Settings>;
 
   try {
     deploymentProfiles = readDeploymentProfiles();
@@ -418,7 +418,7 @@ export function clearLockedSettings() {
  * Returns an object that mirrors `lockedProfileSettings` but all leaves are `true`.
  * @param lockedProfileSettings
  */
-export function determineLockedFields(lockedProfileSettings: any): LockedSettingsType|boolean {
+export function determineLockedFields(lockedProfileSettings: LockedSettingsType): LockedSettingsType|boolean {
   if (typeof lockedProfileSettings !== 'object' || Array.isArray(lockedProfileSettings) || lockedProfileSettings === null) {
     return true;
   }
