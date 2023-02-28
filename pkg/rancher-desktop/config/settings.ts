@@ -375,7 +375,7 @@ export function load(): Settings {
     if (err.code === 'ENOENT') {
       if (Object.keys(deploymentProfiles.defaults).length) {
         _.merge(settings, deploymentProfiles.defaults);
-        if (!_.get(deploymentProfiles.defaults, 'virtualMachine.memoryInGB')) {
+        if (!_.has(deploymentProfiles.defaults, 'virtualMachine.memoryInGB')) {
           setDefaultMemory = true;
         }
       } else {
@@ -389,23 +389,19 @@ export function load(): Settings {
       // 25% of available ram up to a maximum of 6gb
       settings.virtualMachine.memoryInGB = Math.min(6, Math.round(totalMemoryInGB / 4.0));
     }
-
-    const appVersion = getProductionVersion();
-
-    // Auo-update doesn't work for CI or local builds, so don't enable it by default
-    if (!_.has(deploymentProfiles.defaults, 'application.updater.enabled') &&
-      (appVersion.includes('-') || appVersion.includes('?') ||
-        (os.platform() === 'linux' && !process.env['APPIMAGE']))) {
+    if (os.platform() === 'linux' && !process.env['APPIMAGE']) {
       settings.application.updater.enabled = false;
-    }
+    } else {
+      const appVersion = getProductionVersion();
 
-    save(settings);
+      // Auto-update doesn't work for CI or local builds, so don't enable it by default
+      if (appVersion.includes('-') || appVersion.includes('?')) {
+        settings.application.updater.enabled = false;
+      }
+    }
   }
-  _.merge(settings, deploymentProfiles.defaults, lockedProfileSettings);
-  if (settings.application.pathManagementStrategy === PathManagementStrategy.NotSet) {
-    settings.application.pathManagementStrategy = PathManagementStrategy.RcFiles;
-    save(settings);
-  }
+  _.merge(settings, lockedProfileSettings);
+  save(settings);
   determineLockedFields(lockedSettings, lockedProfileSettings);
 
   return settings;
