@@ -61,7 +61,6 @@ export class DarwinPaths extends ProvidesResources implements Paths {
   lima = path.join(this.appHome, 'lima');
   oldIntegration = '/usr/local/bin';
   integration = path.join(this.altAppHome, 'bin');
-  // TODO: last part temporary until the plist reader has been implemented and the filename incorporates the app name
   readonly deploymentProfileSystem = path.join('/Library', 'Preferences', APP_NAME);
   readonly deploymentProfileUser = path.join(os.homedir(), 'Library', 'Preferences', APP_NAME);
 

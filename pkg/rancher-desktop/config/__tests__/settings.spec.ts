@@ -26,7 +26,7 @@ describe('settings', () => {
   const jsonProfile = JSON.stringify({
     ignoreThis:      { soups: ['gazpacho', 'turtle'] },
     containerEngine: {
-      imageAllowList: {
+      allowedImages: {
         enabled:  true,
         patterns: ["Shouldn't see this"],
       },
@@ -39,7 +39,7 @@ describe('settings', () => {
   <dict>
     <key>containerEngine</key>
     <dict>
-      <key>imageAllowList</key>
+      <key>allowedImages</key>
       <dict>
         <key>enabled</key>
         <true/>
@@ -100,7 +100,7 @@ describe('settings', () => {
   const lockedJSONProfile = JSON.stringify({
     ignoreThis:      { soups: ['beautiful', 'vichyssoise'] },
     containerEngine: {
-      imageAllowList: {
+      allowedImages: {
         enabled:  true,
         patterns: ['nginx', 'alpine'],
       },
@@ -128,7 +128,7 @@ describe('settings', () => {
     <integer>4</integer>
     <key>containerEngine</key>
     <dict>
-      <key>imageAllowList</key>
+      <key>allowedImages</key>
       <dict>
         <key>enabled</key>
         <true/>
@@ -183,7 +183,7 @@ describe('settings', () => {
   </dict>
 </plist>
   `;
-  const lockedAccessors = ['containerEngine.imageAllowList.enabled', 'containerEngine.imageAllowList.patterns'];
+  const lockedAccessors = ['containerEngine.allowedImages.enabled', 'containerEngine.allowedImages.patterns'];
   let mock: any;
   // TODO: Stop doing this once profiles are implemented on windows
   const describeNotWindows = process.platform === 'win32' ? describe.skip : describe;
@@ -247,7 +247,7 @@ describe('settings', () => {
       },
       diagnostics: {
         showMuted:   false,
-        mutedChecks: {},
+        mutedChecks: { },
       },
     };
     origPrefs = clone(prefs);
@@ -440,7 +440,7 @@ describe('settings', () => {
     test('flattens an object with only allowed-image settings', () => {
       const lockedSettings = {
         containerEngine: {
-          imageAllowList: {
+          allowedImages: {
             enabled:  true,
             patterns: ["Shouldn't see this"],
           },
@@ -448,7 +448,7 @@ describe('settings', () => {
       };
       const expectedLockedFields = {
         containerEngine: {
-          imageAllowList: {
+          allowedImages: {
             enabled:  true,
             patterns: true,
           },
@@ -466,7 +466,7 @@ describe('settings', () => {
           numberCPUs: 2,
         },
         containerEngine: {
-          imageAllowList: {
+          allowedImages: {
             enabled:  true,
             patterns: ["Shouldn't see this"],
           },
@@ -479,7 +479,7 @@ describe('settings', () => {
           numberCPUs: true,
         },
         containerEngine: {
-          imageAllowList: {
+          allowedImages: {
             enabled:  true,
             patterns: true,
           },
