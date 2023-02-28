@@ -236,6 +236,9 @@ export function getUpdatableNode(cfg: Settings, fqFieldAccessor: string): [Recor
   return (finalOptionPart in (currentConfig || {})) ? [currentConfig, finalOptionPart] : null;
 }
 
+// This is similar to `lodash.set({}, fqFieldAccessor, finalValue)
+// but it also does some error checking.
+// On the happy path, it's exactly like `lodash.set`
 export function getObjectRepresentation(fqFieldAccessor: string, finalValue: boolean|number|string): RecursivePartial<Settings> {
   if (!fqFieldAccessor) {
     throw new Error("Invalid command-line option: can't be the empty string.");
