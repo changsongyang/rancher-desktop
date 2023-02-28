@@ -252,11 +252,7 @@ describe('settings', () => {
     };
     origPrefs = clone(prefs);
     // Need to clear the lockedSettings field in tests because settings.load assumes it's initally an empty object.
-    const keys = Object.keys(settings.lockedSettings);
-
-    for (const k of keys) {
-      delete settings.lockedSettings[k];
-    }
+    settings.clearLockedSettings();
   });
 
   describe('profiles', () => {
@@ -318,7 +314,7 @@ describe('settings', () => {
         });
         test('all fields are unlocked', () => {
           settings.load();
-          verifyAllFieldsAreUnlocked(settings.lockedSettings);
+          verifyAllFieldsAreUnlocked(settings.getLockedSettings());
         });
       });
 
@@ -332,7 +328,7 @@ describe('settings', () => {
         });
         test('all fields are unlocked', () => {
           settings.load();
-          verifyAllFieldsAreUnlocked(settings.lockedSettings);
+          verifyAllFieldsAreUnlocked(settings.getLockedSettings());
         });
       });
 
@@ -346,7 +342,7 @@ describe('settings', () => {
         });
         test('all fields are locked', () => {
           settings.load();
-          verifyAllFieldsAreLocked(settings.lockedSettings);
+          verifyAllFieldsAreLocked(settings.getLockedSettings());
         });
       });
 
@@ -360,7 +356,7 @@ describe('settings', () => {
         });
         test('all fields are unlocked', () => {
           settings.load();
-          verifyAllFieldsAreUnlocked(settings.lockedSettings);
+          verifyAllFieldsAreUnlocked(settings.getLockedSettings());
         });
       });
 
@@ -374,7 +370,7 @@ describe('settings', () => {
         });
         test('all fields are locked', () => {
           settings.load();
-          verifyAllFieldsAreUnlocked(settings.lockedSettings);
+          verifyAllFieldsAreUnlocked(settings.getLockedSettings());
         });
       });
 
@@ -388,7 +384,7 @@ describe('settings', () => {
         });
         test('all fields are locked', () => {
           settings.load();
-          verifyAllFieldsAreUnlocked(settings.lockedSettings);
+          verifyAllFieldsAreUnlocked(settings.getLockedSettings());
         });
 
         describe('when there is only a system profile with locked imageList', () => {
@@ -401,7 +397,7 @@ describe('settings', () => {
           });
           test('all fields are locked', () => {
             settings.load();
-            verifyAllFieldsAreLocked(settings.lockedSettings);
+            verifyAllFieldsAreLocked(settings.getLockedSettings());
           });
         });
 
@@ -415,7 +411,7 @@ describe('settings', () => {
           });
           test('all fields are locked', () => {
             settings.load();
-            verifyAllFieldsAreLocked(settings.lockedSettings);
+            verifyAllFieldsAreLocked(settings.getLockedSettings());
           });
         });
 
@@ -429,7 +425,7 @@ describe('settings', () => {
           });
           test('all fields are locked', () => {
             settings.load();
-            verifyAllFieldsAreLocked(settings.lockedSettings);
+            verifyAllFieldsAreLocked(settings.getLockedSettings());
           });
         });
       });
@@ -454,9 +450,8 @@ describe('settings', () => {
           },
         },
       };
-      const calculatedLockedFields = {};
+      const calculatedLockedFields = settings.determineLockedFields(lockedSettings);
 
-      settings.determineLockedFields(calculatedLockedFields, lockedSettings);
       expect(calculatedLockedFields).toEqual(expectedLockedFields);
     });
     test('flattens a complex object', () => {
@@ -486,17 +481,15 @@ describe('settings', () => {
         },
         kubernetes: { version: true },
       };
-      const calculatedLockedFields = {};
+      const calculatedLockedFields = settings.determineLockedFields(lockedSettings);
 
-      settings.determineLockedFields(calculatedLockedFields, lockedSettings);
       expect(calculatedLockedFields).toEqual(expectedLockedFields);
     });
     test('flattens an empty object', () => {
       const lockedSettings = { };
       const expectedLockedFields = { };
-      const calculatedLockedFields = {};
+      const calculatedLockedFields = settings.determineLockedFields(lockedSettings);
 
-      settings.determineLockedFields(calculatedLockedFields, lockedSettings);
       expect(calculatedLockedFields).toEqual(expectedLockedFields);
     });
   });

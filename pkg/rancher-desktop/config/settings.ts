@@ -135,7 +135,7 @@ export type Settings = typeof defaultSettings;
 // A settings-like type with a subset of all of the fields of defaultSettings,
 // but all leaves are set to `true`.
 export type LockedSettingsType = Record<string, any>;
-export const lockedSettings: LockedSettingsType = {};
+let lockedSettings: LockedSettingsType = {};
 
 export interface DeploymentProfileType {
   defaults: RecursivePartial<Settings>;
@@ -402,27 +402,28 @@ export function load(): Settings {
   }
   _.merge(settings, lockedProfileSettings);
   save(settings);
-  determineLockedFields(lockedSettings, lockedProfileSettings);
+  lockedSettings = determineLockedFields(lockedProfileSettings) as LockedSettingsType;
 
   return settings;
 }
-
-// Precondition: both parameters are non-null objects
-export function determineLockedFields(lockedSettingsToUpdate: any, lockedProfileSettings: any) {
-  for (const key in lockedProfileSettings) {
-    determineLockedFieldsInner(lockedSettingsToUpdate, lockedProfileSettings[key], key);
-  }
+export function getLockedSettings(): LockedSettingsType {
+  return lockedSettings;
 }
 
-function determineLockedFieldsInner(lockedSettingsToUpdate: any, lockedProfileSettings: any, oldKey: string) {
+export function clearLockedSettings() {
+  lockedSettings = {};
+}
+
+/**
+ * Returns an object that mirrors `lockedProfileSettings` but all leaves are `true`.
+ * @param lockedProfileSettings
+ */
+export function determineLockedFields(lockedProfileSettings: any): LockedSettingsType|boolean {
   if (typeof lockedProfileSettings !== 'object' || Array.isArray(lockedProfileSettings) || lockedProfileSettings === null) {
-    lockedSettingsToUpdate[oldKey] = true;
-  } else {
-    lockedSettingsToUpdate[oldKey] = {};
-    for (const newKey in lockedProfileSettings) {
-      determineLockedFieldsInner(lockedSettingsToUpdate[oldKey], lockedProfileSettings[newKey], newKey);
-    }
+    return true;
   }
+
+  return _.fromPairs(Object.entries(lockedProfileSettings).map(entry => [entry[0], determineLockedFields(entry[1])]));
 }
 
 export function firstRunDialogNeeded() {
