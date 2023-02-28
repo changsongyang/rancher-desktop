@@ -361,7 +361,6 @@ export function load(): Settings {
   let deploymentProfiles: DeploymentProfileType = { defaults: {}, locked: {} };
   let setDefaultMemory = false;
   let lockedProfileSettings: any;
-  // XXX: Do we need to ever obey a setting of updater.enabled in the deployment profile?
 
   try {
     deploymentProfiles = readDeploymentProfiles();
