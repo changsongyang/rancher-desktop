@@ -220,11 +220,15 @@ export async function clear() {
  *  `result` would be null if the accessor doesn't point to a node in the Settings subtree.
  *
  * @param cfg: the settings object
- * @param fqFieldAccessor: a multi-component dashed name representing a path to a node in the settings object.
+ * @param fqFieldAccessor: a multi-component dotted name representing a path to a node in the settings object.
  * @returns [internal node in cfg, final accessor name], or
  *          `null` if fqFieldAccessor doesn't point to a node in the settings tree.
  */
 export function getUpdatableNode(cfg: Settings, fqFieldAccessor: string): [Record<string, any>, string] | null {
+  // Given an accessor like a.b.c.d:
+  // If `a.b.c` is found in cfg, return `[cfg[a][b][c], d]`.
+  // Otherwise return null.
+  // Need a special case where the accessor has no dots (i.e. is top-level).
   const optionParts = fqFieldAccessor.split('.');
   const finalOptionPart = optionParts.pop() ?? '';
   const currentConfig = optionParts.length === 0 ? cfg : _.get(cfg, optionParts.join('.'));
